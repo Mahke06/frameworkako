@@ -1,11 +1,15 @@
 package framework.util;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import framework.annotation.Controller;
+import framework.annotation.UrlMapping;
+import framework.mapping.Mapping;
 
 public class Utilitaire {
 
@@ -49,4 +53,18 @@ public class Utilitaire {
 
         return controllers;
     }
+
+
+
+
+    public static void scanRoutes(String packageName, HashMap<String, Mapping> routes) {
+        for (Class<?> clazz : findControllers(packageName)) {
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(UrlMapping.class)) {
+                    String url = method.getAnnotation(UrlMapping.class).value();
+                    routes.put(url, new Mapping(clazz.getName(), method.getName()));
+                }
+            }
+    }
+}
 }
