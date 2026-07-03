@@ -9,7 +9,7 @@ import java.util.List;
 
 import framework.annotation.Controller;
 import framework.annotation.UrlMapping;
-import framework.mapping.Mapping;
+import framework.mapping.*;
 
 public class Utilitaire {
 
@@ -56,13 +56,20 @@ public class Utilitaire {
 
 
 
-
-    public static void scanRoutes(String packageName, HashMap<String, Mapping> routes) {
+    public static void scanRoutes(String packageName, HashMap<VerbUrl, Mapping> routes, HashMap<VerbUrl, Mapping> doublon) {
         for (Class<?> clazz : findControllers(packageName)) {
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(UrlMapping.class)) {
                     String url = method.getAnnotation(UrlMapping.class).value();
-                    routes.put(url, new Mapping(clazz.getName(), method.getName()));
+                    String httpMethod = method.getAnnotation(UrlMapping.class).method();
+                    
+                    if (routes.containsKey(new VerbUrl(url, httpMethod))) {
+                        doublon.put(new VerbUrl(url, httpMethod), new Mapping(clazz.getName(), method.getName()));
+                    }
+                    else{
+                        routes.put(new VerbUrl(url, httpMethod), new Mapping(clazz.getName(), method.getName()));
+                    }
+                    
                 }
             }
     }
