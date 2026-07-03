@@ -54,8 +54,6 @@ public class Utilitaire {
         return controllers;
     }
 
-
-
     public static void scanRoutes(String packageName, HashMap<VerbUrl, Mapping> routes, HashMap<VerbUrl, Mapping> doublon) {
         for (Class<?> clazz : findControllers(packageName)) {
             for (Method method : clazz.getDeclaredMethods()) {

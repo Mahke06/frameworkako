@@ -33,6 +33,4 @@ public class VerbUrl {
     public int hashCode() {
         return Objects.hash(url, method);
     }
-
-    
 }
