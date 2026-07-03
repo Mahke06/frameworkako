@@ -1,6 +1,7 @@
 package framework.servlet;
 
 import java.io.*;
+import java.lang.reflect.Method;
 
 import framework.mapping.*;
 import framework.util.Utilitaire;
@@ -11,9 +12,10 @@ import java.util.HashMap;
 public class FrontControllerServlet extends HttpServlet  { 
     HashMap<VerbUrl, Mapping> mappingUrls = new HashMap<>();
     HashMap<VerbUrl, Mapping> doublonUrl = new HashMap<>();
+
     
     @Override
-    public void init() throws ServletException{
+    public void init() throws ServletException {
         String packageName = getInitParameter("controller");
         Utilitaire.scanRoutes(packageName, this.mappingUrls, this.doublonUrl);
     }
@@ -32,13 +34,17 @@ public class FrontControllerServlet extends HttpServlet  {
             if (mapping == null) {
                 res.getWriter().println("\nLien non trouvé : " + path);
             }
-
-            
             
             res.getWriter().println("\nLien trouvé");
             res.getWriter().println("Controller : " + mapping.getControllerName());
             res.getWriter().println("Méthode : " + mapping.getMethodName());
-            res.getWriter().println("Http Method : " + req.getMethod());                       
+            res.getWriter().println("Http Method : " + req.getMethod());
+
+            Class <?> clazz = Class.forName(mapping.getControllerName());
+            Object clazzInstance = clazz.getDeclaredConstructor().newInstance();
+            Method m = clazz.getDeclaredMethod(mapping.getMethodName());
+            m.invoke(clazzInstance);
+
 
         } catch (Exception e) {
             res.getWriter().println(e.getMessage());
@@ -46,13 +52,12 @@ public class FrontControllerServlet extends HttpServlet  {
 
             for (VerbUrl url : this.mappingUrls.keySet()) {
                 Mapping mapping = this.mappingUrls.get(url);
-                res.getWriter().println( "Controller: " + mapping.getControllerName() + "\n" + 
+                res.getWriter().println("Controller: " + mapping.getControllerName() + "\n" + 
                                         "Méthode: " + mapping.getMethodName() + "\n" +
                                         "Http Method: " + url.getMethod());
             }
         }
     }
-
 
 
     @Override
