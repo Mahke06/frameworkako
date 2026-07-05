@@ -11,21 +11,23 @@ public class VerbUrl {
         this.method = method.toUpperCase();
     }
 
-    public String getUrl() { 
-        return url; 
+    public String getUrl() {
+        return url;
     }
-    public String getMethod() { 
-        return method; 
+
+    public String getMethod() {
+        return method;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) 
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
-        if (o == null || getClass() != o.getClass()) 
+        }
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
-
-        VerbUrl verbUrl = (VerbUrl) o;
+        }
+        VerbUrl verbUrl = (VerbUrl) obj;
         return Objects.equals(url, verbUrl.url) && Objects.equals(method, verbUrl.method);
     }
 
