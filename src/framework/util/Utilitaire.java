@@ -9,12 +9,17 @@ import java.util.List;
 
 import framework.annotation.Controller;
 import framework.annotation.UrlMapping;
-import framework.mapping.*;
+import framework.mapping.Mapping;
+import framework.mapping.VerbUrl;
 
 public class Utilitaire {
 
     public static List<Class<?>> findControllers(String packageName) {
         List<Class<?>> controllers = new ArrayList<>();
+
+        if (packageName == null || packageName.trim().isEmpty()) {
+            return controllers;
+        }
 
         try {
             String path = packageName.replace('.', '/');
@@ -53,6 +58,7 @@ public class Utilitaire {
 
         return controllers;
     }
+
 
     public static void scanRoutes(String packageName, HashMap<VerbUrl, Mapping> routes, HashMap<VerbUrl, Mapping> doublon) {
         for (Class<?> clazz : findControllers(packageName)) {

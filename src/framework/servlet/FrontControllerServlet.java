@@ -2,12 +2,13 @@ package framework.servlet;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 
-import framework.mapping.*;
+import framework.mapping.Mapping;
+import framework.mapping.VerbUrl;
 import framework.util.Utilitaire;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
-import java.util.HashMap;
 
 public class FrontControllerServlet extends HttpServlet  { 
     HashMap<VerbUrl, Mapping> mappingUrls = new HashMap<>();
@@ -15,8 +16,21 @@ public class FrontControllerServlet extends HttpServlet  {
 
     
     @Override
+    @SuppressWarnings("unchecked")
     public void init() throws ServletException {
+        Object contextRoutes = getServletContext().getAttribute("routes");
+        Object contextDoublons = getServletContext().getAttribute("doublons");
+
+        if (contextRoutes instanceof HashMap && contextDoublons instanceof HashMap) {
+            this.mappingUrls = (HashMap<VerbUrl, Mapping>) contextRoutes;
+            this.doublonUrl = (HashMap<VerbUrl, Mapping>) contextDoublons;
+            return;
+        }
+
         String packageName = getInitParameter("controller");
+        if (packageName == null) {
+            packageName = getServletContext().getInitParameter("controller");
+        }
         Utilitaire.scanRoutes(packageName, this.mappingUrls, this.doublonUrl);
     }
 
@@ -25,6 +39,7 @@ public class FrontControllerServlet extends HttpServlet  {
 
         String path = req.getRequestURI().substring(req.getContextPath().length());     
         try {
+           
             VerbUrl verbUrl = new VerbUrl(path, req.getMethod());
             if (this.doublonUrl.containsKey(verbUrl)) {
                 throw new Exception("La route :" + verbUrl.getMethod() +  verbUrl.getUrl() + " existe deja");
@@ -33,6 +48,7 @@ public class FrontControllerServlet extends HttpServlet  {
 
             if (mapping == null) {
                 res.getWriter().println("\nLien non trouvé : " + path);
+                return;
             }
             
             res.getWriter().println("\nLien trouvé");
@@ -40,6 +56,7 @@ public class FrontControllerServlet extends HttpServlet  {
             res.getWriter().println("Méthode : " + mapping.getMethodName());
             res.getWriter().println("Http Method : " + req.getMethod());
 
+            
             Class <?> clazz = Class.forName(mapping.getControllerName());
             Object clazzInstance = clazz.getDeclaredConstructor().newInstance();
             Method m = clazz.getDeclaredMethod(mapping.getMethodName());
