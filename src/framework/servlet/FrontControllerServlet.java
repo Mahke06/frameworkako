@@ -6,6 +6,7 @@ import java.util.HashMap;
 
 import framework.mapping.Mapping;
 import framework.mapping.VerbUrl;
+import framework.modelview.ModelAndView;
 import framework.util.Utilitaire;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -35,35 +36,40 @@ public class FrontControllerServlet extends HttpServlet  {
     }
 
     protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        res.setContentType("text/plain;charset=UTF-8");
+        String chemin = req.getRequestURI().substring(req.getContextPath().length());
 
-        String path = req.getRequestURI().substring(req.getContextPath().length());     
         try {
-           
-            VerbUrl verbUrl = new VerbUrl(path, req.getMethod());
-            if (this.doublonUrl.containsKey(verbUrl)) {
-                throw new Exception("La route :" + verbUrl.getMethod() +  verbUrl.getUrl() + " existe deja");
+
+            VerbUrl verbeUrl = new VerbUrl(chemin, req.getMethod());
+            if (this.doublonUrl.containsKey(verbeUrl)) {
+                throw new Exception("La route :" + verbeUrl.getMethod() +  verbeUrl.getUrl() + " existe deja");
             }
-            Mapping mapping = this.mappingUrls.get(verbUrl);
+            Mapping mapping = this.mappingUrls.get(verbeUrl);
 
             if (mapping == null) {
-                res.getWriter().println("\nLien non trouvé : " + path);
+                res.setContentType("text/plain;charset=UTF-8");
+                res.getWriter().println("\nLien non trouvé : " + chemin);
                 return;
             }
-            
-            res.getWriter().println("\nLien trouvé");
-            res.getWriter().println("Controller : " + mapping.getControllerName());
-            res.getWriter().println("Méthode : " + mapping.getMethodName());
-            res.getWriter().println("Http Method : " + req.getMethod());
 
-            
-            Class <?> clazz = Class.forName(mapping.getControllerName());
-            Object clazzInstance = clazz.getDeclaredConstructor().newInstance();
-            Method m = clazz.getDeclaredMethod(mapping.getMethodName());
-            m.invoke(clazzInstance);
+            Class <?> classeControleur = Class.forName(mapping.getControllerName());
+            Object objetControleur = classeControleur.getDeclaredConstructor().newInstance();
+            Method methode = classeControleur.getDeclaredMethod(mapping.getMethodName());
+            Object resultat = methode.invoke(objetControleur);
 
+            if (resultat instanceof ModelAndView) {
+                ModelAndView modelAndView = (ModelAndView) resultat;
+
+                for (String cle : modelAndView.getValeurs().keySet()) {
+                    req.setAttribute(cle, modelAndView.getValeurs().get(cle));
+                }
+
+                RequestDispatcher dispatcher = req.getRequestDispatcher(modelAndView.getPage());
+                dispatcher.forward(req, res);
+            }
 
         } catch (Exception e) {
+            res.setContentType("text/plain;charset=UTF-8");
             res.getWriter().println(e.getMessage());
             res.getWriter().println("\nLiens disponibles :");
 
