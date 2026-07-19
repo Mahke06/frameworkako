@@ -6,6 +6,7 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 import java.util.HashMap;
 
+import framework.container.Conteneur;
 import framework.mapping.Mapping;
 import framework.mapping.VerbUrl;
 import framework.util.Utilitaire;
@@ -15,24 +16,22 @@ public class Listener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         try {
+            ServletContext ctx = sce.getServletContext();
 
-            ServletContext context = sce.getServletContext();
-            String packageName = context.getInitParameter("controller");
+            String pc = ctx.getInitParameter("controller");
+            String ps = ctx.getInitParameter("service");
+            String pd = ctx.getInitParameter("repository");
 
-            if (packageName == null || packageName.trim().isEmpty()) {
-                return;
-            }
+            Conteneur conteneur = new Conteneur();
+            conteneur.scanner(pc, ps, pd);
 
             HashMap<VerbUrl, Mapping> routes = new HashMap<>();
-            HashMap<VerbUrl, Mapping> doublons = new HashMap<>();
+            Utilitaire.scannerRoutes(pc, routes);
 
-            Utilitaire.scanRoutes(packageName, routes, doublons);
-
-            context.setAttribute("routes", routes);
-            context.setAttribute("doublons", doublons);
-
+            ctx.setAttribute("conteneur", conteneur);
+            ctx.setAttribute("routes", routes);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
     }
 }
