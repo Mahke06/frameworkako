@@ -1,8 +1,8 @@
 package framework.mapping;
 
 public class Mapping {
-    String controllerName;
-    String methodName;
+    private String controllerName;
+    private String methodName;
 
     public Mapping(String controllerName, String methodName) {
         this.controllerName = controllerName;
@@ -15,13 +15,5 @@ public class Mapping {
 
     public String getMethodName() {
         return methodName;
-    }
-
-    public void setControllerName(String controllerName) {
-        this.controllerName = controllerName;
-    }
-
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
     }
 }

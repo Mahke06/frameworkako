@@ -7,6 +7,5 @@ import java.lang.annotation.ElementType;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Controller {
-    String value() default "tsy misy anarana";
+public @interface AccesDonnees {
 }

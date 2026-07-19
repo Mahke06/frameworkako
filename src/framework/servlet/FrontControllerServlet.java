@@ -4,92 +4,69 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+import framework.container.Conteneur;
 import framework.mapping.Mapping;
 import framework.mapping.VerbUrl;
 import framework.modelview.ModelAndView;
-import framework.util.Utilitaire;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 
-public class FrontControllerServlet extends HttpServlet  { 
-    HashMap<VerbUrl, Mapping> mappingUrls = new HashMap<>();
-    HashMap<VerbUrl, Mapping> doublonUrl = new HashMap<>();
+public class FrontControllerServlet extends HttpServlet {
 
-    
+    HashMap<VerbUrl, Mapping> routesUrl = new HashMap<>();
+    Conteneur conteneur;
+
     @Override
-    @SuppressWarnings("unchecked")
     public void init() throws ServletException {
-        Object contextRoutes = getServletContext().getAttribute("routes");
-        Object contextDoublons = getServletContext().getAttribute("doublons");
+        Object r = getServletContext().getAttribute("routes");
+        Object c = getServletContext().getAttribute("conteneur");
 
-        if (contextRoutes instanceof HashMap && contextDoublons instanceof HashMap) {
-            this.mappingUrls = (HashMap<VerbUrl, Mapping>) contextRoutes;
-            this.doublonUrl = (HashMap<VerbUrl, Mapping>) contextDoublons;
-            return;
+        if (r instanceof HashMap && c instanceof Conteneur) {
+            routesUrl = (HashMap<VerbUrl, Mapping>) r;
+            conteneur = (Conteneur) c;
         }
-
-        String packageName = getInitParameter("controller");
-        if (packageName == null) {
-            packageName = getServletContext().getInitParameter("controller");
-        }
-        Utilitaire.scanRoutes(packageName, this.mappingUrls, this.doublonUrl);
     }
 
     protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         String chemin = req.getRequestURI().substring(req.getContextPath().length());
 
         try {
+            VerbUrl vUrl = new VerbUrl(chemin, req.getMethod());
+            Mapping m = routesUrl.get(vUrl);
 
-            VerbUrl verbeUrl = new VerbUrl(chemin, req.getMethod());
-            if (this.doublonUrl.containsKey(verbeUrl)) {
-                throw new Exception("La route :" + verbeUrl.getMethod() +  verbeUrl.getUrl() + " existe deja");
-            }
-            Mapping mapping = this.mappingUrls.get(verbeUrl);
-
-            if (mapping == null) {
-                res.setContentType("text/plain;charset=UTF-8");
-                res.getWriter().println("\nLien non trouvé : " + chemin);
+            if (m == null) {
+                res.getWriter().println("Lien non trouve : " + chemin);
                 return;
             }
 
-            Class <?> classeControleur = Class.forName(mapping.getControllerName());
-            Object objetControleur = classeControleur.getDeclaredConstructor().newInstance();
-            Method methode = classeControleur.getDeclaredMethod(mapping.getMethodName());
-            Object resultat = methode.invoke(objetControleur);
+            Class<?> clazz = Class.forName(m.getControllerName());
+            Object ctrl = conteneur.obtenir(clazz);
+            Method methode = clazz.getDeclaredMethod(m.getMethodName());
+            Object resultat = methode.invoke(ctrl);
 
             if (resultat instanceof ModelAndView) {
-                ModelAndView modelAndView = (ModelAndView) resultat;
+                ModelAndView mv = (ModelAndView) resultat;
 
-                for (String cle : modelAndView.getValeurs().keySet()) {
-                    req.setAttribute(cle, modelAndView.getValeurs().get(cle));
+                for (String cle : mv.getValeurs().keySet()) {
+                    req.setAttribute(cle, mv.getValeurs().get(cle));
                 }
 
-                RequestDispatcher dispatcher = req.getRequestDispatcher(modelAndView.getPage());
-                dispatcher.forward(req, res);
+                RequestDispatcher rd = req.getRequestDispatcher(mv.getPage());
+                rd.forward(req, res);
             }
 
         } catch (Exception e) {
-            res.setContentType("text/plain;charset=UTF-8");
             res.getWriter().println(e.getMessage());
-            res.getWriter().println("\nLiens disponibles :");
-
-            for (VerbUrl url : this.mappingUrls.keySet()) {
-                Mapping mapping = this.mappingUrls.get(url);
-                res.getWriter().println("Controller: " + mapping.getControllerName() + "\n" + 
-                                        "Méthode: " + mapping.getMethodName() + "\n" +
-                                        "Http Method: " + url.getMethod());
-            }
         }
     }
 
-
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException  {
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         processRequest(req, res);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException  {
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         processRequest(req, res);
     }
 }

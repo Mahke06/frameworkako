@@ -6,7 +6,6 @@ import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Controller {
-    String value() default "tsy misy anarana";
+@Target(ElementType.FIELD)
+public @interface Injecter {
 }

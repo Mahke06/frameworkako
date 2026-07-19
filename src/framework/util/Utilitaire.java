@@ -1,6 +1,7 @@
 package framework.util;
 
 import java.io.File;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
@@ -14,68 +15,54 @@ import framework.mapping.VerbUrl;
 
 public class Utilitaire {
 
-    public static List<Class<?>> findControllers(String packageName) {
-        List<Class<?>> controllers = new ArrayList<>();
+    public static List<Class<?>> trouverClasses(String nomPaquet, Class<? extends Annotation> annotation) {
+        List<Class<?>> classes = new ArrayList<>();
 
-        if (packageName == null || packageName.trim().isEmpty()) {
-            return controllers;
+        if (nomPaquet == null) {
+            return classes;
         }
 
         try {
-            String path = packageName.replace('.', '/');
+            String path = nomPaquet.replace('.', '/');
+            URL ressource = Thread.currentThread().getContextClassLoader().getResource(path);
 
-            URL resource = Thread.currentThread().getContextClassLoader().getResource(path);
-
-            if (resource == null) {
-                return controllers;
+            if (ressource == null) {
+                return classes;
             }
 
-            File directory = new File(resource.toURI());
-
-            File[] files = directory.listFiles();
+            File dir = new File(ressource.toURI());
+            File[] files = dir.listFiles();
 
             if (files == null) {
-                return controllers;
+                return classes;
             }
 
-            for (File file : files) {
+            for (File f : files) {
+                if (f.getName().endsWith(".class")) {
+                    String nom = nomPaquet + "." + f.getName().replace(".class", "");
+                    Class<?> c = Class.forName(nom);
 
-                if (file.getName().endsWith(".class")) {
-
-                    String className = packageName + "." + file.getName().replace(".class", "");
-
-                    Class<?> clazz = Class.forName(className);
-
-                    if (clazz.isAnnotationPresent(Controller.class)) {
-                        controllers.add(clazz);
+                    if (c.isAnnotationPresent(annotation)) {
+                        classes.add(c);
                     }
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return controllers;
+        return classes;
     }
 
-
-    public static void scanRoutes(String packageName, HashMap<VerbUrl, Mapping> routes, HashMap<VerbUrl, Mapping> doublon) {
-        for (Class<?> clazz : findControllers(packageName)) {
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(UrlMapping.class)) {
-                    String url = method.getAnnotation(UrlMapping.class).value();
-                    String httpMethod = method.getAnnotation(UrlMapping.class).method();
-                    
-                    if (routes.containsKey(new VerbUrl(url, httpMethod))) {
-                        doublon.put(new VerbUrl(url, httpMethod), new Mapping(clazz.getName(), method.getName()));
-                    }
-                    else{
-                        routes.put(new VerbUrl(url, httpMethod), new Mapping(clazz.getName(), method.getName()));
-                    }
-                    
+    public static void scannerRoutes(String nomPaquet, HashMap<VerbUrl, Mapping> routes) {
+        for (Class<?> c : trouverClasses(nomPaquet, Controller.class)) {
+            for (Method m : c.getDeclaredMethods()) {
+                if (m.isAnnotationPresent(UrlMapping.class)) {
+                    String url = m.getAnnotation(UrlMapping.class).value();
+                    String httpMethod = m.getAnnotation(UrlMapping.class).method();
+                    routes.put(new VerbUrl(url, httpMethod), new Mapping(c.getName(), m.getName()));
                 }
             }
+        }
     }
-}
 }

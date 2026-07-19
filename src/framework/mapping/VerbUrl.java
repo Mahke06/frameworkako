@@ -21,14 +21,10 @@ public class VerbUrl {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        VerbUrl verbUrl = (VerbUrl) obj;
-        return Objects.equals(url, verbUrl.url) && Objects.equals(method, verbUrl.method);
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        VerbUrl v = (VerbUrl) obj;
+        return Objects.equals(url, v.url) && Objects.equals(method, v.method);
     }
 
     @Override
