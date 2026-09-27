@@ -4,17 +4,22 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+import com.google.gson.Gson;
+
 import framework.container.Conteneur;
 import framework.mapping.Mapping;
 import framework.mapping.VerbUrl;
 import framework.modelview.ModelAndView;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
+import framework.annotation.WebAPI;
+
+import framework.json.Jsonappele;
 
 public class FrontControllerServlet extends HttpServlet {
-
     HashMap<VerbUrl, Mapping> routesUrl = new HashMap<>();
     Conteneur conteneur;
+    private static final Gson json = new Gson();
 
     @Override
     public void init() throws ServletException {
@@ -42,17 +47,13 @@ public class FrontControllerServlet extends HttpServlet {
             Class<?> clazz = Class.forName(m.getControllerName());
             Object ctrl = conteneur.obtenir(clazz);
             Method methode = clazz.getDeclaredMethod(m.getMethodName());
-            Object resultat = methode.invoke(ctrl);
 
-            if (resultat instanceof ModelAndView) {
-                ModelAndView mv = (ModelAndView) resultat;
-
-                for (String cle : mv.getValeurs().keySet()) {
-                    req.setAttribute(cle, mv.getValeurs().get(cle));
-                }
-
-                RequestDispatcher rd = req.getRequestDispatcher(mv.getPage());
-                rd.forward(req, res);
+            if(methode.isAnnotationPresent(WebAPI.class)){
+                Jsonappele.manoratraJson(res, methode.invoke(ctrl));
+                return;
+            }
+            else {
+                Jsonappele.dispatcher(req, res, methode.invoke(ctrl));
             }
 
         } catch (Exception e) {

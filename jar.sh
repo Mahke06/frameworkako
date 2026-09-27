@@ -11,12 +11,19 @@ BUILD_DIR="build"
 DIST_DIR="dist"
 LIB_DIR="lib"
 
+GSON_JAR="$LIB_DIR/gson-2.11.0.jar"
+
 # API Jakarta Servlet
 SERVLET_API_JAR="$LIB_DIR/servlet-api.jar"
 
 # Vérification du JAR
 if [ ! -f "$SERVLET_API_JAR" ]; then
     echo "Erreur : $SERVLET_API_JAR introuvable"
+    exit 1
+fi
+
+if [ ! -f "$GSON_JAR" ]; then
+    echo "Erreur : $GSON_JAR introuvable"
     exit 1
 fi
 
@@ -33,7 +40,7 @@ find "$SRC_DIR" -name "*.java" > sources.txt
 echo "Compilation..."
 
 javac \
-    -cp "$SERVLET_API_JAR" \
+    -cp "$SERVLET_API_JAR:$GSON_JAR" \
     -d "$BUILD_DIR" \
     @sources.txt
 
