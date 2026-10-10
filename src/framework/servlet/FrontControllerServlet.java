@@ -4,22 +4,19 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
-import com.google.gson.Gson;
-
 import framework.container.Conteneur;
 import framework.mapping.Mapping;
 import framework.mapping.VerbUrl;
-import framework.modelview.ModelAndView;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import framework.annotation.WebAPI;
-
 import framework.json.Jsonappele;
+import framework.util.Parametre;
 
 public class FrontControllerServlet extends HttpServlet {
+
     HashMap<VerbUrl, Mapping> routesUrl = new HashMap<>();
     Conteneur conteneur;
-    private static final Gson json = new Gson();
 
     @Override
     public void init() throws ServletException {
@@ -32,7 +29,9 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
-    protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+    protected void processRequest(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+
         String chemin = req.getRequestURI().substring(req.getContextPath().length());
 
         try {
@@ -46,15 +45,28 @@ public class FrontControllerServlet extends HttpServlet {
 
             Class<?> clazz = Class.forName(m.getControllerName());
             Object ctrl = conteneur.obtenir(clazz);
-            Method methode = clazz.getDeclaredMethod(m.getMethodName());
 
-            if(methode.isAnnotationPresent(WebAPI.class)){
-                Jsonappele.manoratraJson(res, methode.invoke(ctrl));
+            Method methode = null;
+
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.getName().equals(m.getMethodName())) {
+                    methode = method;
+                    break;
+                }
+            }
+
+            if (methode == null) {
+                res.getWriter().println("Methode non trouvee");
                 return;
             }
-            else {
-                Jsonappele.dispatcher(req, res, methode.invoke(ctrl));
+
+            Object[] arguments = Parametre.recupererParametres(req, methode);
+
+            if (methode.isAnnotationPresent(WebAPI.class)) {
+                Jsonappele.manoratraJson(res,methode.invoke(ctrl, arguments));
+                return;
             }
+            Jsonappele.dispatcher(req,res,methode.invoke(ctrl, arguments));
 
         } catch (Exception e) {
             res.getWriter().println(e.getMessage());
@@ -62,12 +74,10 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        processRequest(req, res);
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException { processRequest(req, res);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        processRequest(req, res);
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException { processRequest(req, res);
     }
 }
