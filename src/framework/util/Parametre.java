@@ -1,10 +1,12 @@
 package framework.util;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
+
 
 public class Parametre {
 
@@ -33,29 +35,46 @@ public class Parametre {
                 Object objet = parameter.getType().getDeclaredConstructor().newInstance();
 
                 for (Field champ : parameter.getType().getDeclaredFields()) {
-                    String valeurChamp = req.getParameter(champ.getName());
 
-                    if (valeurChamp != null) {
-                        String nomSetter = "set" + champ.getName().substring(0, 1).toUpperCase()
-                        + champ.getName().substring(1);
+                    Object valeurConvertie;
+                    String nomSetter = "set" + champ.getName().substring(0, 1).toUpperCase() + champ.getName().substring(1);
 
-                        for (Method m : parameter.getType().getMethods()) {
-                            if (m.getName().equals(nomSetter) && m.getParameterCount() == 1) {
-                                Object valeurConvertie = valeurChamp;
+                    if (champ.getType() == byte[].class) {
+                        Part part = req.getPart(champ.getName());
 
-                                if (champ.getType() == int.class) {
-                                    valeurConvertie = Integer.parseInt(valeurChamp);
-                                } else if (champ.getType() == double.class) {
-                                    valeurConvertie = Double.parseDouble(valeurChamp);
-                                } else if (champ.getType() == boolean.class) {
-                                    valeurConvertie = Boolean.parseBoolean(valeurChamp);
-                                }
-                                m.invoke(objet, valeurConvertie);
-                                break;
-                            }
+                        if (part == null || part.getSize() == 0) {
+                            continue;
+                        }
+
+                        valeurConvertie = part.getInputStream().readAllBytes();
+
+                    } else {
+                        String valeurChamp = req.getParameter(champ.getName());
+
+                        if (valeurChamp == null) {
+                            continue;
+                        }
+
+                        valeurConvertie = valeurChamp;
+
+                        if (champ.getType() == int.class) {
+                            valeurConvertie = Integer.parseInt(valeurChamp);
+                        } else if (champ.getType() == double.class) {
+                            valeurConvertie = Double.parseDouble(valeurChamp);
+                        } else if (champ.getType() == boolean.class) {
+                            valeurConvertie = Boolean.parseBoolean(valeurChamp);
+                        }
+                    }
+
+                    for (Method m : parameter.getType().getMethods()) {
+                        if (m.getName().equals(nomSetter) && m.getParameterCount() == 1
+                                && m.getParameterTypes()[0] == champ.getType()) {
+                            m.invoke(objet, valeurConvertie);
+                            break;
                         }
                     }
                 }
+
                 arguments[i] = objet;
             }
         }
