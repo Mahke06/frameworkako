@@ -8,11 +8,13 @@ import framework.container.Conteneur;
 import framework.mapping.Mapping;
 import framework.mapping.VerbUrl;
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.*;
 import framework.annotation.WebAPI;
 import framework.json.Jsonappele;
 import framework.util.Parametre;
 
+@MultipartConfig 
 public class FrontControllerServlet extends HttpServlet {
 
     HashMap<VerbUrl, Mapping> routesUrl = new HashMap<>();
@@ -22,6 +24,9 @@ public class FrontControllerServlet extends HttpServlet {
     public void init() throws ServletException {
         Object r = getServletContext().getAttribute("routes");
         Object c = getServletContext().getAttribute("conteneur");
+
+        String chemin = getServletContext().getInitParameter("upload");
+        System.out.println(chemin);
 
         if (r instanceof HashMap && c instanceof Conteneur) {
             routesUrl = (HashMap<VerbUrl, Mapping>) r;
