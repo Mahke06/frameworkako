@@ -14,6 +14,8 @@ import framework.annotation.WebAPI;
 import framework.json.Jsonappele;
 import framework.util.Parametre;
 
+import framework.session.Session;
+
 @MultipartConfig 
 public class FrontControllerServlet extends HttpServlet {
 
@@ -34,10 +36,10 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
-    protected void processRequest(HttpServletRequest req, HttpServletResponse res)
-            throws ServletException, IOException {
+    protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 
         String chemin = req.getRequestURI().substring(req.getContextPath().length());
+        HttpSession httpsession = req.getSession();
 
         try {
             VerbUrl vUrl = new VerbUrl(chemin, req.getMethod());
@@ -65,13 +67,22 @@ public class FrontControllerServlet extends HttpServlet {
                 return;
             }
 
-            Object[] arguments = Parametre.recupererParametres(req, methode);
+            Object[] arguments = Parametre.recupererParametres(req, methode, httpsession);
+
+            Object resultat = methode.invoke(ctrl, arguments);
+
+            for (Object argument : arguments) {
+                if (argument instanceof Session) {
+                    ((Session) argument).mettreAJour(httpsession);
+                }
+            }
 
             if (methode.isAnnotationPresent(WebAPI.class)) {
-                Jsonappele.manoratraJson(res,methode.invoke(ctrl, arguments));
+                Jsonappele.manoratraJson(res,resultat);
                 return;
             }
-            Jsonappele.dispatcher(req,res,methode.invoke(ctrl, arguments));
+            
+            Jsonappele.dispatcher(req,res,resultat);
 
         } catch (Exception e) {
             res.getWriter().println(e.getMessage());

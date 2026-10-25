@@ -7,10 +7,13 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 
+import jakarta.servlet.http.HttpSession;
+import framework.session.Session;
+
 
 public class Parametre {
 
-    public static Object[] recupererParametres(HttpServletRequest req, Method methode) throws Exception {
+    public static Object[] recupererParametres(HttpServletRequest req, Method methode, HttpSession httpsession) throws Exception {
         Parameter[] parameters = methode.getParameters();
 
         Object[] arguments = new Object[parameters.length];
@@ -23,7 +26,12 @@ public class Parametre {
 
             String valeur = req.getParameter(nom);
 
-            if (parameter.getType() == String.class) {
+            
+            if (parameter.getType() == Session.class) {
+                Session session = new Session();
+                session.charger(httpsession);
+                arguments[i] = session;
+            } else if (parameter.getType() == String.class) {
                 arguments[i] = valeur;
             } else if (parameter.getType() == int.class) {
                 arguments[i] = Integer.parseInt(valeur);
