@@ -18,12 +18,15 @@ import framework.session.Session;
 
 import framework.annotation.Auth;
 
+import java.util.Arrays;
+
 @MultipartConfig 
 public class FrontControllerServlet extends HttpServlet {
 
     HashMap<VerbUrl, Mapping> routesUrl = new HashMap<>();
     Conteneur conteneur;
     private String authSessionAttribute;
+    private String roleSessionAttribute;
     
 
     @Override
@@ -36,6 +39,7 @@ public class FrontControllerServlet extends HttpServlet {
         System.out.println(chemin);
 
         authSessionAttribute = getInitParameter("auth-session-attribute");
+        roleSessionAttribute = getInitParameter("role-session-attribute");
         if (authSessionAttribute == null || authSessionAttribute.isEmpty()) {
             throw new ServletException("Parametre auth-session-attribute manquant");
         }
@@ -78,13 +82,34 @@ public class FrontControllerServlet extends HttpServlet {
             }
 
             if (methode.isAnnotationPresent(Auth.class)) {
-            HttpSession session = req.getSession(false);
 
-            if (session == null || session.getAttribute(authSessionAttribute) == null) {
-                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentification requise");
-                return;
+                Auth auth = methode.getAnnotation(Auth.class);
+
+                HttpSession session = req.getSession(false);
+
+                if (session == null || session.getAttribute(authSessionAttribute) == null) {
+                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentification requise");
+                    return;
+                }
+
+                String[] rolesAutorises = auth.roles();
+
+                if (rolesAutorises.length > 0) {
+
+                    if (roleSessionAttribute == null || roleSessionAttribute.isEmpty()) {
+                        throw new ServletException("init-param role-session-attribute manquant");
+                    }
+
+                    Object roleUtilisateur = session.getAttribute(roleSessionAttribute);
+
+                    boolean autorise = roleUtilisateur != null && Arrays.asList(rolesAutorises).contains(roleUtilisateur.toString());
+
+                    if (!autorise) {
+                        res.sendError(HttpServletResponse.SC_FORBIDDEN, "Rôle non autorisé");
+                        return;
+                    }
+                }
             }
-        }
 
             Object[] arguments = Parametre.recupererParametres(req, methode, httpsession);
 
